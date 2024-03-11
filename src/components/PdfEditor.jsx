@@ -5,26 +5,35 @@ import { AppContext } from "../context/AppContext";
 import { Select, MenuItem } from "@mui/material";
 
 const generateRandomParagraph = (selectedWord) => {
-  const sentences = `Lorem ipsum dolor sit amet, consectetur adipiscing elit.,
+  return `Lorem ipsum dolor sit amet, consectetur adipiscing elit.,
     Sed do eiusmod tempor incididunt ut ${selectedWord} et dolore magna aliqua.,
     Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.,
     Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.,
     Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.`;
-  return sentences;
 };
 
 const PdfEditor = () => {
   const [selectedWord, setSelectedWord] = useState("");
+  const [content, setContent] = useState("");
   const { setPdfContent } = useContext(AppContext);
   const quillRef = useRef(null);
 
   useEffect(() => {
     const initialParagraph = generateRandomParagraph(selectedWord);
-    setPdfContent(initialParagraph); // Set initial content
+    setContent(initialParagraph); // Set initial content
+    setPdfContent(initialParagraph); // Set initial content in context
   }, [selectedWord, setPdfContent]);
 
+  useEffect(() => {
+    if (quillRef.current && quillRef.current.getEditor()) {
+      const editor = quillRef.current.getEditor();
+      editor.clipboard.dangerouslyPasteHTML(content);
+    }
+  }, [content]);
+
   const handleQuillChange = (content, delta, source, editor) => {
-    console.log("content: ", content);
+    // const editorHtml = editor.root.innerHTML;
+    setContent(content);
     setPdfContent(content);
   };
 
@@ -36,8 +45,8 @@ const PdfEditor = () => {
   const logEditorContent = () => {
     if (quillRef.current) {
       const editor = quillRef.current.getEditor();
-      const content = editor.root.innerHTML; // Get the HTML content
-      console.log("Editor HTML content:", content);
+      const editorHtml = editor.root.innerHTML; // Get the HTML content
+      console.log("Editor HTML content:", editorHtml);
     }
   };
 
@@ -52,7 +61,7 @@ const PdfEditor = () => {
       <ReactQuill
         ref={quillRef}
         theme="snow"
-        defaultValue={generateRandomParagraph(selectedWord)} // Set defaultValue to random paragraph
+        value={content}
         onChange={handleQuillChange}
       />
       <button onClick={logEditorContent}>Log Editor Content</button>
