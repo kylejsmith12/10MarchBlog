@@ -1,70 +1,77 @@
-import React, { useContext, useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { AppContext } from "../context/AppContext";
-import { Select, MenuItem } from "@mui/material";
-
-const generateRandomParagraph = (selectedWord) => {
-  return `Lorem ipsum dolor sit amet, consectetur adipiscing elit.,
-    Sed do eiusmod tempor incididunt ut ${selectedWord} et dolore magna aliqua.,
-    Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.,
-    Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.,
-    Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.`;
-};
 
 const PdfEditor = () => {
-  const [selectedWord, setSelectedWord] = useState("");
-  const [content, setContent] = useState("");
-  const { setPdfContent } = useContext(AppContext);
-  const quillRef = useRef(null);
+  // const [pdfContent, setPdfContent] = useState("");
+  const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
+  const [pages, setPages] = useState([]);
+  const { pdfContent, setPdfContent } = useContext(AppContext);
 
   useEffect(() => {
-    const initialParagraph = generateRandomParagraph(selectedWord);
-    setContent(initialParagraph); // Set initial content
-    setPdfContent(initialParagraph); // Set initial content in context
-  }, [selectedWord, setPdfContent]);
+    const updatePageSize = () => {
+      setPageSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+
+    window.addEventListener("resize", updatePageSize);
+    updatePageSize();
+
+    return () => {
+      window.removeEventListener("resize", updatePageSize);
+    };
+  }, []);
 
   useEffect(() => {
-    if (quillRef.current && quillRef.current.getEditor()) {
-      const editor = quillRef.current.getEditor();
-      editor.clipboard.dangerouslyPasteHTML(content);
+    paginateContent();
+  }, [pdfContent, pageSize]);
+
+  const paginateContent = () => {
+    const quill = document.querySelector(".ql-editor");
+    if (!quill) return;
+
+    const lines = quill.children;
+    const pageHeight = 11 * 96 - 2 * 96; // 11 inches * 96 pixels per inch - 2 * 1 inch padding
+    const pageWidth = 8.5 * 96 - 2 * 96; // 8.5 inches * 96 pixels per inch - 2 * 1 inch padding
+    const pageContent = [];
+    let currentPage = [];
+    let currentHeight = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const lineHeight = line.offsetHeight;
+
+      if (currentHeight + lineHeight > pageHeight) {
+        pageContent.push(currentPage);
+        currentPage = [];
+        currentHeight = 0;
+      }
+
+      if (line.offsetWidth <= pageWidth) {
+        currentHeight += lineHeight;
+        currentPage.push(line.outerHTML);
+      } else {
+        // If line width exceeds page width, split it into smaller parts
+        let pdfContent = line.innerHTML;
+        while (pdfContent.length > 0) {
+          const cutIndex = Math.floor(pageWidth / 10); // Assuming average letter width is 10px
+          currentPage.push(`<div>${pdfContent.substring(0, cutIndex)}</div>`);
+          pdfContent = pdfContent.substring(cutIndex);
+          currentHeight += lineHeight;
+        }
+      }
     }
-  }, [content]);
 
-  const handleQuillChange = (content, delta, source, editor) => {
-    // const editorHtml = editor.root.innerHTML;
-    setContent(content);
-    setPdfContent(content);
-  };
-
-  const handleSelectChange = (event) => {
-    const selectedOption = event.target.value;
-    setSelectedWord(selectedOption);
-  };
-
-  const logEditorContent = () => {
-    if (quillRef.current) {
-      const editor = quillRef.current.getEditor();
-      const editorHtml = editor.root.innerHTML; // Get the HTML content
-      console.log("Editor HTML content:", editorHtml);
+    if (currentPage.length > 0) {
+      pageContent.push(currentPage);
     }
+
+    setPages(pageContent);
   };
 
   return (
     <div>
-      <h2>Edit PDF Content</h2>
-      <Select value={selectedWord} onChange={handleSelectChange}>
-        <MenuItem value="test">Test</MenuItem>
-        <MenuItem value="example">Example</MenuItem>
-        {/* Add more options as needed */}
-      </Select>
-      <ReactQuill
-        ref={quillRef}
-        theme="snow"
-        value={content}
-        onChange={handleQuillChange}
-      />
-      <button onClick={logEditorContent}>Log Editor Content</button>
+      <ReactQuill theme="snow" value={pdfContent} onChange={setPdfContent} />
     </div>
   );
 };
