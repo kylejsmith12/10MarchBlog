@@ -17,15 +17,15 @@ const PdfViewer = () => {
     // Split content into pages based on maximum height
     const contentPages = [];
     let currentPageContent = "";
-    let totalHeight = 0;
-    let lastParagraphHeight = 0;
+    let totalHeight = -5;
+    let lastParagraphHeight = -90;
     const paragraphs = pdfContent.split("<p>");
     paragraphs.forEach((paragraph, index) => {
       // Skip empty paragraphs
       if (!paragraph.trim()) return;
 
       // Calculate the height of the paragraph including tags
-      const paragraphHeight = (paragraph.match(/<\/p>/g) || []).length + 1;
+      const paragraphHeight = (paragraph.match(/<\/p>/g) || []).length;
 
       // Check if adding this paragraph exceeds the max content height
       if (
