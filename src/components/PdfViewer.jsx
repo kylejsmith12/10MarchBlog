@@ -1,7 +1,7 @@
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
 import { AppContext } from "../context/AppContext";
 import ReactHtmlParser from "react-html-parser";
-import { Paper, Grid, Typography } from "@mui/material";
+import { Paper, Grid, Button } from "@mui/material";
 
 const PAGE_HEIGHT = 10; // Height of content area in inches, excluding padding
 
@@ -9,6 +9,7 @@ const PdfViewer = () => {
   const { pdfContent } = useContext(AppContext);
   const [pages, setPages] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
+  const paperRef = useRef(null); // Reference to the Paper component
 
   useEffect(() => {
     // Calculate maximum content height for a single page
@@ -66,57 +67,35 @@ const PdfViewer = () => {
     }
   };
 
+  // Function to calculate the position of the edit button based on the Paper width
+  const calculateButtonPosition = () => {
+    if (paperRef.current) {
+      const paperWidth = paperRef.current.offsetWidth;
+      return paperWidth + 50; // Add 50px to the right of the Paper
+    }
+    return "auto"; // If Paper width is not yet available, position it automatically
+  };
+
   return (
     <div>
       <h2>All PDF Content</h2>
-      <div style={{}}>
+      <div style={{ position: "relative" }}>
         <Grid container spacing={2}>
           <Grid item xs={6}>
             <Paper
               elevation={2}
               style={{
+                width: "100%",
+                height: "100%",
                 width: "8.5in",
                 height: "11in",
                 margin: "auto",
-                position: "relative",
               }}
+              ref={paperRef}
             >
-              <Typography
-                variant="h6"
-                style={{
-                  position: "absolute",
-                  top: "0.25in",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                }}
-              >
-                Header
-              </Typography>
               <div style={{ padding: "1in" }}>
                 {ReactHtmlParser(pages[currentPage])}
               </div>
-              <Typography
-                variant="body2"
-                style={{
-                  position: "absolute",
-                  bottom: "0.25in",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                }}
-              >
-                Page {currentPage + 1} of {pages.length}
-              </Typography>
-              <Typography
-                variant="body2"
-                style={{
-                  position: "absolute",
-                  bottom: "0.05in",
-                  left: "50%",
-                  transform: "translateX(-50%)",
-                }}
-              >
-                Footer
-              </Typography>
             </Paper>
             <div>
               <button onClick={handlePrevPage}>Previous Page</button>
@@ -124,6 +103,19 @@ const PdfViewer = () => {
             </div>
           </Grid>
         </Grid>
+        {/* Edit button positioned relative to the Paper */}
+        <Button
+          variant="contained"
+          color="primary"
+          style={{
+            position: "absolute",
+            top: "0",
+            left: calculateButtonPosition(),
+            marginTop: ".25in", // Align with the top of the Paper
+          }}
+        >
+          Edit
+        </Button>
       </div>
     </div>
   );
