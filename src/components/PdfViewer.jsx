@@ -1,8 +1,7 @@
-// src/components/PdfViewer.jsx
 import React, { useContext, useState, useEffect } from "react";
 import { AppContext } from "../context/AppContext";
 import ReactHtmlParser from "react-html-parser";
-import { Paper, Grid } from "@mui/material";
+import { Paper, Grid, Typography } from "@mui/material";
 
 const PAGE_HEIGHT = 10; // Height of content area in inches, excluding padding
 
@@ -17,15 +16,18 @@ const PdfViewer = () => {
     // Split content into pages based on maximum height
     const contentPages = [];
     let currentPageContent = "";
-    let totalHeight = -5;
-    let lastParagraphHeight = -90;
+    let totalHeight = 0;
+    let lastParagraphHeight = 0;
     const paragraphs = pdfContent.split("<p>");
     paragraphs.forEach((paragraph, index) => {
       // Skip empty paragraphs
       if (!paragraph.trim()) return;
 
+      // Check if the current page is 3
+      if (contentPages.length === 2) return; // Skip adding content for page 3
+
       // Calculate the height of the paragraph including tags
-      const paragraphHeight = (paragraph.match(/<\/p>/g) || []).length;
+      const paragraphHeight = (paragraph.match(/<\/p>/g) || []).length + 1;
 
       // Check if adding this paragraph exceeds the max content height
       if (
@@ -73,16 +75,48 @@ const PdfViewer = () => {
             <Paper
               elevation={2}
               style={{
-                width: "100%",
-                height: "100%",
                 width: "8.5in",
                 height: "11in",
                 margin: "auto",
+                position: "relative",
               }}
             >
+              <Typography
+                variant="h6"
+                style={{
+                  position: "absolute",
+                  top: "0.25in",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                }}
+              >
+                Header
+              </Typography>
               <div style={{ padding: "1in" }}>
                 {ReactHtmlParser(pages[currentPage])}
               </div>
+              <Typography
+                variant="body2"
+                style={{
+                  position: "absolute",
+                  bottom: "0.25in",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                }}
+              >
+                Page {currentPage + 1} of {pages.length}
+              </Typography>
+              <Typography
+                variant="body2"
+                style={{
+                  position: "absolute",
+                  bottom: "0.05in",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                }}
+              >
+                Footer
+              </Typography>
             </Paper>
             <div>
               <button onClick={handlePrevPage}>Previous Page</button>
